@@ -57,7 +57,7 @@ class DataIngestion:
             logging.info("Recieved data from mongodb")
             self.split_data(dataframe)
             logging.info("Data split done into test adn training data")
-            data_ingestion_artifact=DataIngestionArtifact(trianed_file_path=self.data_ingestion_config.training_file_path,
+            data_ingestion_artifact=DataIngestionArtifact(trained_file_path=self.data_ingestion_config.training_file_path,
                 test_file_path=self.data_ingestion_config.testing_file_path)
             
             logging.info(f"Data ingestion artifact: {data_ingestion_artifact}")

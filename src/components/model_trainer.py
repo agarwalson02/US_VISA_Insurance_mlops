@@ -13,6 +13,16 @@ from src.entity.config_entity import ModelTrainerConfig
 from src.entity.artifact_entity import DataTransformationArtifact,ModelTrainerArtifact,ClassificationMetricArtifact
 from src.utils.main_utils import read_yaml_file,load_object,save_object,load_numpy_array_data
 from src.entity.estimator import USvisaModel
+import dagshub
+import mlflow
+import mlflow.sklearn
+
+
+
+# Below code block is for local use
+#-------------------------------------------------------------------------------------
+mlflow.set_tracking_uri('https://dagshub.com/agarwalson02/US_VISA_Insurance_mlops.mlflow/')
+dagshub.init(repo_owner='agarwalson02', repo_name='MLOPS-imdb-pipeline', mlflow=True)
 
 
 
@@ -48,32 +58,68 @@ class ModelTrainer:
             raise MyException(e, sys) from e
         
 
-    def initiate_model_trainer(self, ) -> ModelTrainerArtifact:
+    def initiate_model_trainer(self) -> ModelTrainerArtifact:
         logging.info("Entered initiate_model_trainer method of ModelTrainer class")
         try:
-            train_arr = load_numpy_array_data(file_path=self.data_transformation_artifact.transformed_train_file_path)
-            test_arr = load_numpy_array_data(file_path=self.data_transformation_artifact.transformed_test_file_path)
-            
-            best_model_detail ,metric_artifact = self.get_model_object_and_report(train=train_arr, test=test_arr)
-            
-            preprocessing_obj = load_object(file_path=self.data_transformation_artifact.transformed_object_file_path)
+            train_arr = load_numpy_array_data(
+                file_path=self.data_transformation_artifact.transformed_train_file_path
+            )
+            test_arr = load_numpy_array_data(
+                file_path=self.data_transformation_artifact.transformed_test_file_path
+            )
 
+            import mlflow
+            import mlflow.sklearn
+
+            with mlflow.start_run():
+
+                # 🔥 TRAIN + GET METRICS
+                best_model_detail, metric_artifact = self.get_model_object_and_report(
+                    train=train_arr, test=test_arr
+                )
+
+                # ✅ LOG METRICS
+                mlflow.log_metric("f1_score", metric_artifact.f1_score)
+                mlflow.log_metric("precision", metric_artifact.precision_score)
+                mlflow.log_metric("recall", metric_artifact.recall_score)
+
+                # ✅ LOG PARAM
+                mlflow.log_param(
+                    "model_name",
+                    type(best_model_detail.best_model).__name__
+                )
+
+                preprocessing_obj = load_object(
+                    file_path=self.data_transformation_artifact.transformed_object_file_path
+                )
+
+                usvisa_model = USvisaModel(
+                    preprocessing_object=preprocessing_obj,
+                    trained_model_object=best_model_detail.best_model
+                )
+
+                # ✅ LOG FULL PIPELINE (BEST PRACTICE)
+                mlflow.sklearn.log_model(
+                    sk_model=usvisa_model,
+                    artifact_path="model"
+                )
+
+            # ⬇️ AFTER MLFLOW RUN ENDS
 
             if best_model_detail.best_score < self.model_trainer_config.expected_accuracy:
-                logging.info("No best model found with score more than base score")
                 raise Exception("No best model found with score more than base score")
 
-            usvisa_model = USvisaModel(preprocessing_object=preprocessing_obj,
-                                       trained_model_object=best_model_detail.best_model)
-            logging.info("Created usvisa model object with preprocessor and model")
-            logging.info("Created best model file path.")
-            save_object(self.model_trainer_config.trained_model_file_path, usvisa_model)
+            save_object(
+                self.model_trainer_config.trained_model_file_path,
+                usvisa_model
+            )
 
             model_trainer_artifact = ModelTrainerArtifact(
                 trained_model_file_path=self.model_trainer_config.trained_model_file_path,
                 metric_artifact=metric_artifact,
             )
-            logging.info(f"Model trainer artifact: {model_trainer_artifact}")
+
             return model_trainer_artifact
+
         except Exception as e:
             raise MyException(e, sys) from e

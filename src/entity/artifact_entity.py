@@ -30,6 +30,7 @@ class ClassificationMetricArtifact:
 class ModelTrainerArtifact:
     trained_model_file_path:str 
     metric_artifact:ClassificationMetricArtifact
+    run_id: str
 
 
 @dataclass
@@ -38,6 +39,7 @@ class ModelEvaluationArtifact:
     changed_accuracy:float
     s3_model_path:str 
     trained_model_path:str
+    run_id: str
 
 @dataclass
 class ModelPusherArtifact:

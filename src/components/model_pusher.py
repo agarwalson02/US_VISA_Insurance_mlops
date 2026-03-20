@@ -10,8 +10,7 @@ from src.entity.s3_estimator import USvisaEstimator
 import mlflow.sklearn
 import dagshub
 
-mlflow.set_tracking_uri('https://dagshub.com/agarwalson02/US_VISA_Insurance_mlops.mlflow/')
-dagshub.init(repo_owner='agarwalson02', repo_name='MLOPS-imdb-pipeline', mlflow=True)
+
 
 class ModelPusher:
 
@@ -32,7 +31,8 @@ class ModelPusher:
             self.usvisa_estimator.save_model(from_file=self.model_evaluation_artifact.trained_model_path)
 
             #Register model in MLflow
-            run_id = self.model_evaluation_artifact.run_id   # 🔥 pass this!
+            run_id = self.model_evaluation_artifact.run_id  
+
 
             model_uri = f"runs:/{run_id}/model"
 

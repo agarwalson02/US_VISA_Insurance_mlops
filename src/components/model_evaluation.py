@@ -35,8 +35,8 @@ from src.entity.s3_estimator import USvisaEstimator
 
 # Below code block is for local use
 #-------------------------------------------------------------------------------------
-mlflow.set_tracking_uri('https://dagshub.com/agarwalson02/US_VISA_Insurance_mlops.mlflow/')
-dagshub.init(repo_owner='agarwalson02', repo_name='MLOPS-imdb-pipeline', mlflow=True)
+# mlflow.set_tracking_uri('https://dagshub.com/agarwalson02/US_VISA_Insurance_mlops.mlflow/')
+# dagshub.init(repo_owner='agarwalson02', repo_name='MLOPS-imdb-pipeline', mlflow=True)
 
 @dataclass
 class EvaluateModelResponse:
@@ -110,46 +110,17 @@ class ModelEvaluation:
     
     def initiate_model_evaluation(self) -> ModelEvaluationArtifact:
         try:
-            import mlflow
+            evaluate_model_response = self.evaluate_model()
 
-            with mlflow.start_run(run_name="model_evaluation"):
+            model_evaluation_artifact = ModelEvaluationArtifact(
+                is_model_accepted=evaluate_model_response.is_model_accepted,
+                s3_model_path=self.model_eval_config.s3_model_key_path,
+                trained_model_path=self.model_trainer_artifact.trained_model_file_path,
+                changed_accuracy=evaluate_model_response.difference,
+                run_id=self.model_trainer_artifact.run_id   # ✅ PASS ONLY
+            )
 
-                evaluate_model_response = self.evaluate_model()
-
-                # ✅ LOG COMPARISON METRICS
-                mlflow.log_metric(
-                    "trained_model_f1_score",
-                    evaluate_model_response.trained_model_f1_score
-                )
-
-                mlflow.log_metric(
-                    "best_model_f1_score",
-                    evaluate_model_response.best_model_f1_score or 0
-                )
-
-                mlflow.log_metric(
-                    "difference",
-                    evaluate_model_response.difference
-                )
-
-                # ✅ LOG DECISION
-                mlflow.log_param(
-                    "is_model_accepted",
-                    evaluate_model_response.is_model_accepted
-                )
-
-                s3_model_path = self.model_eval_config.s3_model_key_path
-
-                model_evaluation_artifact = ModelEvaluationArtifact(
-                    is_model_accepted=evaluate_model_response.is_model_accepted,
-                    s3_model_path=s3_model_path,
-                    trained_model_path=self.model_trainer_artifact.trained_model_file_path,
-                    changed_accuracy=evaluate_model_response.difference
-                )
-
-                logging.info(f"Model evaluation artifact: {model_evaluation_artifact}")
-
-                return model_evaluation_artifact
+            return model_evaluation_artifact
 
         except Exception as e:
-            raise MyException(e, sys) from e
+            raise MyException(e, sys)

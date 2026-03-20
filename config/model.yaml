@@ -11,37 +11,38 @@ model_selection:
     params:
       algorithm: kd_tree
       weights: uniform
-      n_neighbors: 5
+      n_neighbors: 3
     search_param_grid:
       algorithm:
-        - auto
-        - ball_tree
-        - kd_tree
-        - brute
+      - auto
+      - ball_tree
+      - kd_tree
+      - brute
       weights:
-        - uniform
-        - distance
+      - uniform
+      - distance
       n_neighbors:
-        - 3
-        - 5
-        - 9
+      - 3
+      - 5
+      - 9
 
+      
   module_1:
     class: RandomForestClassifier
     module: sklearn.ensemble
     params:
-      max_depth: 12
+      max_depth: 10
       max_features: sqrt
-      n_estimators: 5
+      n_estimators: 3
     search_param_grid:
       max_depth:
-        - 10
-        - 15
-        - 20
+      - 10
+      - 15
+      - 20
       max_features:
-        - sqrt
-        - log2
+      - sqrt
+      - log2
       n_estimators:
-        - 3
-        - 5
-        - 9
+      - 3
+      - 5
+      - 9

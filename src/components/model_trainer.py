@@ -21,8 +21,6 @@ import mlflow.sklearn
 
 # Below code block is for local use
 #-------------------------------------------------------------------------------------
-mlflow.set_tracking_uri('https://dagshub.com/agarwalson02/US_VISA_Insurance_mlops.mlflow/')
-dagshub.init(repo_owner='agarwalson02', repo_name='MLOPS-imdb-pipeline', mlflow=True)
 
 
 
@@ -60,6 +58,7 @@ class ModelTrainer:
 
     def initiate_model_trainer(self) -> ModelTrainerArtifact:
         logging.info("Entered initiate_model_trainer method of ModelTrainer class")
+        
         try:
             train_arr = load_numpy_array_data(
                 file_path=self.data_transformation_artifact.transformed_train_file_path
@@ -71,7 +70,9 @@ class ModelTrainer:
             import mlflow
             import mlflow.sklearn
 
-            with mlflow.start_run():
+            with mlflow.start_run(run_name="model_evaluation"):
+
+                run_id = mlflow.active_run().info.run_id
 
                 # 🔥 TRAIN + GET METRICS
                 best_model_detail, metric_artifact = self.get_model_object_and_report(
@@ -100,10 +101,10 @@ class ModelTrainer:
 
                 # ✅ LOG FULL PIPELINE (BEST PRACTICE)
                 mlflow.sklearn.log_model(
-                    sk_model=usvisa_model,
+                    sk_model=best_model_detail.best_model,
                     artifact_path="model"
                 )
-
+                
             # ⬇️ AFTER MLFLOW RUN ENDS
 
             if best_model_detail.best_score < self.model_trainer_config.expected_accuracy:
@@ -117,6 +118,7 @@ class ModelTrainer:
             model_trainer_artifact = ModelTrainerArtifact(
                 trained_model_file_path=self.model_trainer_config.trained_model_file_path,
                 metric_artifact=metric_artifact,
+                run_id=run_id
             )
 
             return model_trainer_artifact
